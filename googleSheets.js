@@ -101,7 +101,12 @@ class GoogleSheetsService {
 
   async appendRow(data) {
     if (!this.sheets) {
-      await this.initialize();
+      try {
+        await this.initialize();
+      } catch (initError) {
+        // If initialization fails, don't try to use file path
+        throw initError;
+      }
     }
 
     try {

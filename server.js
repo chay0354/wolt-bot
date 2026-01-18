@@ -61,6 +61,12 @@ sheetsService.initialize().then(() => {
   });
 }).catch(err => {
   console.error('Warning: Google Sheets initialization failed, but server will continue:', err.message);
+  if (process.env.VERCEL && !process.env.GOOGLE_CREDENTIALS_JSON) {
+    console.error('\n❌ CRITICAL: GOOGLE_CREDENTIALS_JSON environment variable is missing!');
+    console.error('📋 Add it in Vercel Dashboard → Settings → Environment Variables');
+    console.error('   Name: GOOGLE_CREDENTIALS_JSON');
+    console.error('   Value: (base64 encoded credentials JSON)');
+  }
   console.error('Messages will still be replied to, but won\'t be logged to Google Sheets.');
 });
 
