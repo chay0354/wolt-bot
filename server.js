@@ -23,12 +23,29 @@ if (!accountSid || !authToken) {
 const client = twilio(accountSid, authToken);
 
 // Google Sheets configuration
-// For Vercel, we need to handle the credentials file differently
+// For Vercel, prioritize environment variable over file path
 let credentialsPath;
-if (process.env.VERCEL) {
-  // On Vercel, we'll use environment variables for the JSON content
-  credentialsPath = process.env.GOOGLE_CREDENTIALS_PATH || '/tmp/credentials.json';
+if (process.env.GOOGLE_CREDENTIALS_JSON) {
+  // If we have credentials as base64 env var, create temp file for googleSheets.js
+  const fs = require('fs');
+  const os = require('os');
+  credentialsPath = path.join(os.tmpdir(), 'google-credentials.json');
+  try {
+    const credentials = JSON.parse(
+      Buffer.from(process.env.GOOGLE_CREDENTIALS_JSON, 'base64').toString('utf-8')
+    );
+    fs.writeFileSync(credentialsPath, JSON.stringify(credentials, null, 2));
+    console.log('Google credentials loaded from environment variable');
+  } catch (error) {
+    console.error('Error creating credentials file from env var:', error.message);
+    // Fallback to default path
+    credentialsPath = process.env.GOOGLE_CREDENTIALS_PATH || path.join(__dirname, 'beaming-opus-452719-u5-b39abc625ad4.json');
+  }
+} else if (process.env.VERCEL) {
+  // On Vercel without env var, try Vercel's file system path
+  credentialsPath = process.env.GOOGLE_CREDENTIALS_PATH || '/var/task/beaming-opus-452719-u5-b39abc625ad4.json';
 } else {
+  // Local development
   credentialsPath = process.env.GOOGLE_CREDENTIALS_PATH || path.join(__dirname, 'beaming-opus-452719-u5-b39abc625ad4.json');
 }
 const spreadsheetId = process.env.SPREADSHEET_ID || '1GULHxajfokRK2rcTHW_XgJgbLp7-IS9_2ziIt6skePs';
