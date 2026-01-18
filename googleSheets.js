@@ -85,7 +85,22 @@ class GoogleSheetsService {
 
     try {
       const sheetName = await this.getSheetName();
-      const range = `${sheetName}!A:Z`;
+      // Write to columns D, E, F to match Hebrew headers: שעת פנייה, תאריך פנייה, טלפון
+      // data should be: [phone, date, time] or we'll map it
+      const range = `${sheetName}!D:F`; // Write to columns D, E, F
+      
+      // If data has 5 elements [phone, message, timestamp, date, time]
+      // Map to [time, date, phone] for columns D, E, F
+      let rowData;
+      if (data.length >= 5) {
+        // Map: [phone, message, timestamp, date, time] -> [time, date, phone]
+        rowData = [data[4], data[3], data[0]]; // time, date, phone
+      } else if (data.length === 3) {
+        // Already in correct format [time, date, phone]
+        rowData = data;
+      } else {
+        rowData = data;
+      }
       
       const response = await this.sheets.spreadsheets.values.append({
         spreadsheetId: this.spreadsheetId,
@@ -93,7 +108,7 @@ class GoogleSheetsService {
         valueInputOption: 'USER_ENTERED',
         insertDataOption: 'INSERT_ROWS',
         resource: {
-          values: [data],
+          values: [rowData],
         },
       });
 
