@@ -17,19 +17,33 @@ class GoogleSheetsService {
       
       if (process.env.GOOGLE_CREDENTIALS_JSON) {
         // Use credentials from environment variable (base64 encoded)
-        const credentials = JSON.parse(
-          Buffer.from(process.env.GOOGLE_CREDENTIALS_JSON, 'base64').toString('utf-8')
-        );
-        authConfig = {
-          credentials: credentials,
-          scopes: ['https://www.googleapis.com/auth/spreadsheets'],
-        };
+        try {
+          const credentials = JSON.parse(
+            Buffer.from(process.env.GOOGLE_CREDENTIALS_JSON, 'base64').toString('utf-8')
+          );
+          authConfig = {
+            credentials: credentials,
+            scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+          };
+          console.log('Using Google credentials from environment variable');
+        } catch (parseError) {
+          console.error('Error parsing GOOGLE_CREDENTIALS_JSON:', parseError.message);
+          throw new Error('Invalid GOOGLE_CREDENTIALS_JSON format. Must be base64 encoded JSON.');
+        }
+      } else if (process.env.VERCEL) {
+        // On Vercel, we MUST use environment variable
+        throw new Error('GOOGLE_CREDENTIALS_JSON environment variable is required on Vercel. Please add it in Vercel Dashboard → Settings → Environment Variables.');
       } else {
-        // Use keyFile (local development or Vercel with uploaded file)
+        // Use keyFile (local development only)
+        const fs = require('fs');
+        if (!fs.existsSync(this.credentialsPath)) {
+          throw new Error(`Credentials file not found at: ${this.credentialsPath}`);
+        }
         authConfig = {
           keyFile: this.credentialsPath,
           scopes: ['https://www.googleapis.com/auth/spreadsheets'],
         };
+        console.log('Using Google credentials from file:', this.credentialsPath);
       }
 
       this.auth = new google.auth.GoogleAuth(authConfig);
@@ -42,7 +56,14 @@ class GoogleSheetsService {
       
       console.log('Google Sheets service initialized');
     } catch (error) {
-      console.error('Error initializing Google Sheets:', error);
+      console.error('Error initializing Google Sheets:', error.message);
+      if (process.env.VERCEL && !process.env.GOOGLE_CREDENTIALS_JSON) {
+        console.error('\n❌ GOOGLE_CREDENTIALS_JSON is required on Vercel!');
+        console.error('📋 To fix:');
+        console.error('   1. Go to Vercel Dashboard → Your Project → Settings → Environment Variables');
+        console.error('   2. Add GOOGLE_CREDENTIALS_JSON with the base64 encoded credentials');
+        console.error('   3. Redeploy your project');
+      }
       throw error;
     }
   }
