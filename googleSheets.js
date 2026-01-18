@@ -18,9 +18,21 @@ class GoogleSheetsService {
       if (process.env.GOOGLE_CREDENTIALS_JSON) {
         // Use credentials from environment variable (base64 encoded)
         try {
-          const credentials = JSON.parse(
-            Buffer.from(process.env.GOOGLE_CREDENTIALS_JSON, 'base64').toString('utf-8')
-          );
+          // Try to parse as base64 first
+          let credentials;
+          try {
+            const decoded = Buffer.from(process.env.GOOGLE_CREDENTIALS_JSON, 'base64').toString('utf-8');
+            credentials = JSON.parse(decoded);
+          } catch (base64Error) {
+            // If base64 decode fails, try parsing as raw JSON (user might have pasted raw JSON)
+            try {
+              credentials = JSON.parse(process.env.GOOGLE_CREDENTIALS_JSON);
+              console.warn('⚠️  GOOGLE_CREDENTIALS_JSON appears to be raw JSON, not base64. It worked, but consider using base64 for better security.');
+            } catch (jsonError) {
+              throw new Error('GOOGLE_CREDENTIALS_JSON must be either base64-encoded JSON or raw JSON. Parse error: ' + base64Error.message);
+            }
+          }
+          
           authConfig = {
             credentials: credentials,
             scopes: ['https://www.googleapis.com/auth/spreadsheets'],
@@ -28,7 +40,7 @@ class GoogleSheetsService {
           console.log('Using Google credentials from environment variable');
         } catch (parseError) {
           console.error('Error parsing GOOGLE_CREDENTIALS_JSON:', parseError.message);
-          throw new Error('Invalid GOOGLE_CREDENTIALS_JSON format. Must be base64 encoded JSON.');
+          throw new Error('Invalid GOOGLE_CREDENTIALS_JSON format: ' + parseError.message);
         }
       } else if (process.env.VERCEL) {
         // On Vercel, we MUST use environment variable
