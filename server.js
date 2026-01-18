@@ -134,6 +134,11 @@ app.get('/health', (req, res) => {
 
 // Root route
 app.get('/', (req, res) => {
+  // Get the actual host from the request
+  const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'https';
+  const host = req.headers['x-forwarded-host'] || req.headers.host || 'your-domain.com';
+  const webhookUrl = `${protocol}://${host}/webhook`;
+  
   res.json({
     message: 'Twilio WhatsApp Server',
     endpoints: {
@@ -141,7 +146,8 @@ app.get('/', (req, res) => {
       'POST /webhook': 'Twilio webhook for incoming messages',
       'GET /health': 'Health check'
     },
-    webhookUrl: `https://your-domain.com/webhook` // Update this with your public URL
+    webhookUrl: webhookUrl,
+    status: 'Server is running! Configure this webhook URL in Twilio Console.'
   });
 });
 
