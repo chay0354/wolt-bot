@@ -139,20 +139,21 @@ app.post('/webhook', async (req, res) => {
     console.log('Message:', messageBody);
 
     // Check if phone number already exists in Google Sheets
-    let shouldSendReply = true;
+    let shouldProcess = true;
     try {
       const phoneExists = await sheetsService.phoneNumberExists(fromNumber);
       if (phoneExists) {
-        console.log('Phone number already exists in sheet, skipping auto-reply');
-        shouldSendReply = false;
+        console.log('Phone number already exists in sheet, skipping auto-reply and logging');
+        shouldProcess = false;
       }
     } catch (checkError) {
-      console.error('Error checking phone number, will send reply anyway:', checkError.message);
-      // If check fails, send reply anyway (better to send than miss)
+      console.error('Error checking phone number, will process anyway:', checkError.message);
+      // If check fails, process anyway (better to send than miss)
     }
 
-    // Auto-reply with Hebrew message (only if number doesn't exist)
-    if (shouldSendReply) {
+    // Only process (reply and log) if number doesn't exist
+    if (shouldProcess) {
+      // Auto-reply with Hebrew message
       const replyMessage = `הסתבכת עם הניירת? 🤯
 אתה רק רוצה להתחיל לעבוד עם וולט, אבל פתאום יש מלא רשויות ובלאגן?!
 בדיוק בשביל זה אני פה!
@@ -165,25 +166,25 @@ app.post('/webhook', async (req, res) => {
       
       twiml.message(replyMessage);
       console.log('Auto-reply sent to new number');
-    } else {
-      console.log('No reply sent - number already exists');
-    }
 
-    // Log to Google Sheets
-    try {
-      const rowData = [
-        fromNumber,           // Phone
-        messageBody,          // Message
-        timestamp,            // Timestamp
-        date,                 // Date
-        time                  // Time
-      ];
-      
-      await sheetsService.appendRow(rowData);
-      console.log('Message logged to Google Sheets');
-    } catch (sheetsError) {
-      console.error('Error logging to Google Sheets:', sheetsError);
-      // Don't fail the webhook if Sheets fails
+      // Log to Google Sheets (only for new numbers)
+      try {
+        const rowData = [
+          fromNumber,           // Phone
+          messageBody,          // Message
+          timestamp,            // Timestamp
+          date,                 // Date
+          time                  // Time
+        ];
+        
+        await sheetsService.appendRow(rowData);
+        console.log('Message logged to Google Sheets');
+      } catch (sheetsError) {
+        console.error('Error logging to Google Sheets:', sheetsError);
+        // Don't fail the webhook if Sheets fails
+      }
+    } else {
+      console.log('Number already exists - skipping reply and logging');
     }
 
     // Send TwiML response
