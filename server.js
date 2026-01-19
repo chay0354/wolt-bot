@@ -54,11 +54,9 @@ const sheetsService = new GoogleSheetsService(credentialsPath, spreadsheetId);
 
 // Initialize Google Sheets on startup (non-blocking)
 sheetsService.initialize().then(() => {
-  // Ensure headers exist
-  const headers = ['Phone', 'Message', 'Timestamp', 'Date', 'Time'];
-  sheetsService.ensureHeaders(headers).catch(err => {
-    console.error('Warning: Could not ensure headers, but server will continue:', err.message);
-  });
+  // Headers are already set in the sheet (שעה, תאריך, טלפון in row 2)
+  // No need to create headers
+  console.log('Google Sheets ready - headers already exist in sheet');
 }).catch(err => {
   console.error('Warning: Google Sheets initialization failed, but server will continue:', err.message);
   console.error('Full error:', err);

@@ -165,7 +165,8 @@ class GoogleSheetsService {
 
     try {
       const sheetName = await this.getSheetName();
-      const range = `${sheetName}!A1:Z1`; // Use A1:Z1 format instead of 1:1
+      // Headers are in row 2, not row 1
+      const range = `${sheetName}!A2:Z2`; // Row 2 has headers: שעה, תאריך, טלפון
       
       const response = await this.sheets.spreadsheets.values.get({
         spreadsheetId: this.spreadsheetId,
@@ -179,7 +180,7 @@ class GoogleSheetsService {
         try {
           const response = await this.sheets.spreadsheets.values.get({
             spreadsheetId: this.spreadsheetId,
-            range: 'A1:Z1', // Try without sheet name
+            range: 'A2:Z2', // Try without sheet name, row 2
           });
           return response.data.values ? response.data.values[0] : [];
         } catch (err2) {
@@ -238,6 +239,8 @@ class GoogleSheetsService {
   }
 
   async ensureHeaders(headers) {
+    // Headers are already set in the sheet (שעה, תאריך, טלפון in row 2)
+    // This function is kept for compatibility but won't modify headers
     if (!this.sheets) {
       await this.initialize();
     }
@@ -245,10 +248,20 @@ class GoogleSheetsService {
     try {
       const existingHeaders = await this.getHeaders();
       
-      // If no headers exist, add them
+      // Check if Hebrew headers exist (שעה, תאריך, טלפון)
+      const hasHebrewHeaders = existingHeaders.some(header => 
+        header && (header.includes('שעה') || header.includes('תאריך') || header.includes('טלפון'))
+      );
+      
+      if (hasHebrewHeaders) {
+        console.log('Hebrew headers already exist in row 2 - skipping header creation');
+        return; // Don't modify existing headers
+      }
+      
+      // Only add headers if they don't exist at all
       if (existingHeaders.length === 0) {
         const sheetName = await this.getSheetName();
-        const range = `${sheetName}!A1:Z1`; // Use A1:Z1 format
+        const range = `${sheetName}!A2:Z2`; // Headers should be in row 2
         
         await this.sheets.spreadsheets.values.update({
           spreadsheetId: this.spreadsheetId,
@@ -275,22 +288,6 @@ class GoogleSheetsService {
         console.error('   4. Click "Send"\n');
       } else {
         console.error('Error ensuring headers:', error.message);
-        // Try without sheet name as fallback
-        if (error.code === 400) {
-          try {
-            await this.sheets.spreadsheets.values.update({
-              spreadsheetId: this.spreadsheetId,
-              range: 'A1:Z1',
-              valueInputOption: 'USER_ENTERED',
-              resource: {
-                values: [headers],
-              },
-            });
-            console.log('Headers added using fallback method');
-          } catch (err2) {
-            console.error('Fallback also failed:', err2.message);
-          }
-        }
       }
       // Don't throw - allow server to continue running
     }
