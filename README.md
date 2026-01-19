@@ -23,6 +23,7 @@ cp .env.example .env
    - `CONTENT_VARIABLES`: JSON string with template variables
    - `GOOGLE_CREDENTIALS_PATH`: Path to your Google service account JSON file (default: `beaming-opus-452719-u5-b39abc625ad4.json`)
    - `SPREADSHEET_ID`: Your Google Sheet ID (default: `1GULHxajfokRK2rcTHW_XgJgbLp7-IS9_2ziIt6skePs`)
+   - `VOICE_MESSAGE_URL`: (Optional) URL to an audio file (.mp3, .ogg, .wav) to send as voice message instead of text
 
 4. **Share Google Sheet with Service Account:**
    - Open your Google Sheet: https://docs.google.com/spreadsheets/d/1GULHxajfokRK2rcTHW_XgJgbLp7-IS9_2ziIt6skePs/edit

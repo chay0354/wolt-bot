@@ -151,8 +151,16 @@ app.post('/webhook', async (req, res) => {
 
     // Only process (reply and log) if number doesn't exist
     if (shouldProcess) {
-      // Auto-reply with Hebrew message
-      const replyMessage = `הסתבכת עם הניירת? 🤯
+      // Send voice message (audio file) instead of text
+      const audioUrl = process.env.VOICE_MESSAGE_URL;
+      
+      if (audioUrl) {
+        // Send audio file as voice message
+        twiml.message().media(audioUrl);
+        console.log('Voice message sent to new number:', audioUrl);
+      } else {
+        // Fallback to text message if audio URL not set
+        const replyMessage = `הסתבכת עם הניירת? 🤯
 אתה רק רוצה להתחיל לעבוד עם וולט, אבל פתאום יש מלא רשויות ובלאגן?!
 בדיוק בשביל זה אני פה!
 
@@ -161,9 +169,10 @@ app.post('/webhook', async (req, res) => {
 ✅ מסדר לך הכל, שתוכל לרוץ על המשלוחים בראש שקט
 
 כבר פתחת תיק או שאתה רק בודק איך זה עובד?`;
-      
-      twiml.message(replyMessage);
-      console.log('Auto-reply sent to new number');
+        
+        twiml.message(replyMessage);
+        console.log('Text message sent to new number (VOICE_MESSAGE_URL not set)');
+      }
 
       // Log to Google Sheets (only for new numbers)
       try {
