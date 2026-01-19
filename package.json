@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node server.js",
-    "test-sheets": "node test-sheets-local.js"
+    "test-sheets": "node test-sheets-local.js",
+    "test-write": "node test-write-local.js"
   },
   "keywords": [
     "twilio",

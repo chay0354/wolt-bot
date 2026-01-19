@@ -123,12 +123,12 @@ class GoogleSheetsService {
 
     try {
       const sheetName = await this.getSheetName();
-      // Write to columns D, E, F to match Hebrew headers: שעת פנייה, תאריך פנייה, טלפון
-      // data should be: [phone, date, time] or we'll map it
-      const range = `${sheetName}!D:F`; // Write to columns D, E, F
+      // Write to columns A, B, C to match Hebrew headers: שעה (Time), תאריך (Date), טלפון (Phone)
+      // Headers are in row 2, data starts from row 3
+      const range = `${sheetName}!A:C`; // Write to columns A, B, C
       
       // If data has 5 elements [phone, message, timestamp, date, time]
-      // Map to [time, date, phone] for columns D, E, F
+      // Map to [time, date, phone] for columns A, B, C
       let rowData;
       if (data.length >= 5) {
         // Map: [phone, message, timestamp, date, time] -> [time, date, phone]
@@ -199,9 +199,9 @@ class GoogleSheetsService {
 
     try {
       const sheetName = await this.getSheetName();
-      // Check column F (טלפון - Phone) where we write the phone numbers
-      // Read all rows from column F (skip header row)
-      const range = `${sheetName}!F2:F`; // Column F, starting from row 2 (skip header)
+      // Check column C (טלפון - Phone) where we write the phone numbers
+      // Headers are in row 2, data starts from row 3
+      const range = `${sheetName}!C3:C`; // Column C, starting from row 3 (skip header in row 2)
       
       const response = await this.sheets.spreadsheets.values.get({
         spreadsheetId: this.spreadsheetId,
