@@ -192,6 +192,41 @@ class GoogleSheetsService {
     }
   }
 
+  async phoneNumberExists(phoneNumber) {
+    if (!this.sheets) {
+      await this.initialize();
+    }
+
+    try {
+      const sheetName = await this.getSheetName();
+      // Check column F (טלפון - Phone) - column index 5 (0-based: A=0, B=1, C=2, D=3, E=4, F=5)
+      // Read all rows from column F (skip header row)
+      const range = `${sheetName}!F2:F`; // Column F, starting from row 2 (skip header)
+      
+      const response = await this.sheets.spreadsheets.values.get({
+        spreadsheetId: this.spreadsheetId,
+        range: range,
+      });
+
+      if (!response.data.values) {
+        return false; // No data, number doesn't exist
+      }
+
+      // Check if phone number exists in any row
+      for (const row of response.data.values) {
+        if (row[0] && row[0].trim() === phoneNumber.trim()) {
+          return true; // Phone number found
+        }
+      }
+
+      return false; // Phone number not found
+    } catch (error) {
+      console.error('Error checking if phone number exists:', error.message);
+      // If check fails, assume number doesn't exist (safer to send message than not)
+      return false;
+    }
+  }
+
   async ensureHeaders(headers) {
     if (!this.sheets) {
       await this.initialize();

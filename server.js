@@ -138,8 +138,22 @@ app.post('/webhook', async (req, res) => {
     console.log('Incoming message from:', fromNumber);
     console.log('Message:', messageBody);
 
-    // Auto-reply with Hebrew message
-    const replyMessage = `הסתבכת עם הניירת? 🤯
+    // Check if phone number already exists in Google Sheets
+    let shouldSendReply = true;
+    try {
+      const phoneExists = await sheetsService.phoneNumberExists(fromNumber);
+      if (phoneExists) {
+        console.log('Phone number already exists in sheet, skipping auto-reply');
+        shouldSendReply = false;
+      }
+    } catch (checkError) {
+      console.error('Error checking phone number, will send reply anyway:', checkError.message);
+      // If check fails, send reply anyway (better to send than miss)
+    }
+
+    // Auto-reply with Hebrew message (only if number doesn't exist)
+    if (shouldSendReply) {
+      const replyMessage = `הסתבכת עם הניירת? 🤯
 אתה רק רוצה להתחיל לעבוד עם וולט, אבל פתאום יש מלא רשויות ובלאגן?!
 בדיוק בשביל זה אני פה!
 
@@ -148,8 +162,12 @@ app.post('/webhook', async (req, res) => {
 ✅ מסדר לך הכל, שתוכל לרוץ על המשלוחים בראש שקט
 
 כבר פתחת תיק או שאתה רק בודק איך זה עובד?`;
-    
-    twiml.message(replyMessage);
+      
+      twiml.message(replyMessage);
+      console.log('Auto-reply sent to new number');
+    } else {
+      console.log('No reply sent - number already exists');
+    }
 
     // Log to Google Sheets
     try {
