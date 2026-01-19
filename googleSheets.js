@@ -199,7 +199,7 @@ class GoogleSheetsService {
 
     try {
       const sheetName = await this.getSheetName();
-      // Check column F (טלפון - Phone) - column index 5 (0-based: A=0, B=1, C=2, D=3, E=4, F=5)
+      // Check column F (טלפון - Phone) where we write the phone numbers
       // Read all rows from column F (skip header row)
       const range = `${sheetName}!F2:F`; // Column F, starting from row 2 (skip header)
       
@@ -208,20 +208,30 @@ class GoogleSheetsService {
         range: range,
       });
 
-      if (!response.data.values) {
+      if (!response.data.values || response.data.values.length === 0) {
+        console.log(`Phone check: No data found, ${phoneNumber} is new`);
         return false; // No data, number doesn't exist
       }
 
+      // Normalize phone number for comparison (remove whitespace, make lowercase)
+      const normalizedPhone = phoneNumber.trim().toLowerCase();
+      
       // Check if phone number exists in any row
       for (const row of response.data.values) {
-        if (row[0] && row[0].trim() === phoneNumber.trim()) {
-          return true; // Phone number found
+        if (row[0]) {
+          const existingPhone = row[0].trim().toLowerCase();
+          if (existingPhone === normalizedPhone) {
+            console.log(`Phone check: Found existing number: ${phoneNumber}`);
+            return true; // Phone number found
+          }
         }
       }
 
+      console.log(`Phone check: ${phoneNumber} is new (checked ${response.data.values.length} rows)`);
       return false; // Phone number not found
     } catch (error) {
       console.error('Error checking if phone number exists:', error.message);
+      console.error('Full error:', error);
       // If check fails, assume number doesn't exist (safer to send message than not)
       return false;
     }
