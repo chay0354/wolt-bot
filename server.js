@@ -31,6 +31,23 @@ const credentialsPath = process.env.GOOGLE_CREDENTIALS_PATH
   || path.join(__dirname, 'beaming-opus-452719-u5-b39abc625ad4.json');
 const spreadsheetId = process.env.SPREADSHEET_ID || '1GULHxajfokRK2rcTHW_XgJgbLp7-IS9_2ziIt6skePs';
 
+const ISRAEL_TZ = 'Asia/Jerusalem';
+
+function getIsraelDateTime() {
+  const now = new Date();
+  return {
+    timestamp: now.toISOString(),
+    date: now.toLocaleDateString('en-US', { timeZone: ISRAEL_TZ }),
+    time: now.toLocaleTimeString('en-GB', {
+      timeZone: ISRAEL_TZ,
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false,
+    }),
+  };
+}
+
 const sheetsService = new GoogleSheetsService(credentialsPath, spreadsheetId);
 
 // Initialize Google Sheets on startup (non-blocking)
@@ -102,17 +119,7 @@ app.post('/webhook', async (req, res) => {
     const fromNumber = req.body.From; // Sender's WhatsApp number
     const messageBody = req.body.Body || ''; // Message content
     const messageSid = req.body.MessageSid;
-    const timestamp = new Date().toISOString();
-    const date = new Date().toLocaleDateString('en-US');
-    
-    // Format time in HH:MM:SS AM/PM format that Google Sheets recognizes
-    const now = new Date();
-    const hours = now.getHours();
-    const minutes = now.getMinutes().toString().padStart(2, '0');
-    const seconds = now.getSeconds().toString().padStart(2, '0');
-    const ampm = hours >= 12 ? 'PM' : 'AM';
-    const hours12 = (hours % 12 || 12).toString();
-    const time = `${hours12}:${minutes}:${seconds} ${ampm}`;
+    const { timestamp, date, time } = getIsraelDateTime();
 
     console.log('Incoming message from:', fromNumber);
     console.log('Message:', messageBody);
