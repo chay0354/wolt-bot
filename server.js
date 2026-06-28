@@ -16,38 +16,19 @@ const accountSid = process.env.ACCOUNT_SID;
 const authToken = process.env.AUTH_TOKEN;
 
 if (!accountSid || !authToken) {
-  console.error('Error: ACCOUNT_SID and AUTH_TOKEN must be set in .env file');
-  process.exit(1);
+  const msg = 'Error: ACCOUNT_SID and AUTH_TOKEN must be set in environment variables';
+  console.error(msg);
+  if (require.main === module) {
+    process.exit(1);
+  }
+  throw new Error(msg);
 }
 
 const client = twilio(accountSid, authToken);
 
-// Google Sheets configuration
-// For Vercel, prioritize environment variable over file path
-let credentialsPath;
-if (process.env.GOOGLE_CREDENTIALS_JSON) {
-  // If we have credentials as base64 env var, create temp file for googleSheets.js
-  const fs = require('fs');
-  const os = require('os');
-  credentialsPath = path.join(os.tmpdir(), 'google-credentials.json');
-  try {
-    const credentials = JSON.parse(
-      Buffer.from(process.env.GOOGLE_CREDENTIALS_JSON, 'base64').toString('utf-8')
-    );
-    fs.writeFileSync(credentialsPath, JSON.stringify(credentials, null, 2));
-    console.log('Google credentials loaded from environment variable');
-  } catch (error) {
-    console.error('Error creating credentials file from env var:', error.message);
-    // Fallback to default path
-    credentialsPath = process.env.GOOGLE_CREDENTIALS_PATH || path.join(__dirname, 'beaming-opus-452719-u5-b39abc625ad4.json');
-  }
-} else if (process.env.VERCEL) {
-  // On Vercel without env var, try Vercel's file system path
-  credentialsPath = process.env.GOOGLE_CREDENTIALS_PATH || '/var/task/beaming-opus-452719-u5-b39abc625ad4.json';
-} else {
-  // Local development
-  credentialsPath = process.env.GOOGLE_CREDENTIALS_PATH || path.join(__dirname, 'beaming-opus-452719-u5-b39abc625ad4.json');
-}
+// Google Sheets — on Vercel use GOOGLE_CREDENTIALS_JSON (see googleSheets.js)
+const credentialsPath = process.env.GOOGLE_CREDENTIALS_PATH
+  || path.join(__dirname, 'beaming-opus-452719-u5-b39abc625ad4.json');
 const spreadsheetId = process.env.SPREADSHEET_ID || '1GULHxajfokRK2rcTHW_XgJgbLp7-IS9_2ziIt6skePs';
 
 const sheetsService = new GoogleSheetsService(credentialsPath, spreadsheetId);

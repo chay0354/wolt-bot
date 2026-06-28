@@ -1,6 +1,24 @@
 const { google } = require('googleapis');
 const path = require('path');
 
+function normalizePhone(phone) {
+  if (!phone) return '';
+  let digits = phone.toString().trim().toLowerCase()
+    .replace(/^whatsapp:/, '')
+    .replace(/\D/g, '');
+  // Israeli local format 054... -> 97254...
+  if (digits.startsWith('0') && digits.length >= 9) {
+    digits = '972' + digits.slice(1);
+  }
+  return digits;
+}
+
+function formatPhoneForSheet(phone) {
+  const digits = normalizePhone(phone);
+  if (!digits) return phone;
+  return `whatsapp:+${digits}`;
+}
+
 class GoogleSheetsService {
   constructor(credentialsPath, spreadsheetId) {
     this.credentialsPath = credentialsPath;
@@ -132,7 +150,7 @@ class GoogleSheetsService {
       let rowData;
       if (data.length >= 5) {
         // Map: [phone, message, timestamp, date, time] -> [time, date, phone]
-        rowData = [data[4], data[3], data[0]]; // time, date, phone
+        rowData = [data[4], data[3], formatPhoneForSheet(data[0])];
       } else if (data.length === 3) {
         // Already in correct format [time, date, phone]
         rowData = data;
@@ -214,15 +232,14 @@ class GoogleSheetsService {
         return false; // No data, number doesn't exist
       }
 
-      // Normalize phone number for comparison (remove whitespace, make lowercase)
-      const normalizedPhone = phoneNumber.trim().toLowerCase();
+      // Normalize phone number for comparison (handles whatsapp:+972..., 054..., +972...)
+      const normalizedPhone = normalizePhone(phoneNumber);
       
       // Check if phone number exists in any row
       for (const row of response.data.values) {
         if (row[0]) {
-          const existingPhone = row[0].trim().toLowerCase();
-          if (existingPhone === normalizedPhone) {
-            console.log(`Phone check: Found existing number: ${phoneNumber}`);
+          if (normalizePhone(row[0]) === normalizedPhone) {
+            console.log(`Phone check: Found existing number: ${row[0]} (matches ${phoneNumber})`);
             return true; // Phone number found
           }
         }

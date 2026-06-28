@@ -1,127 +1,94 @@
-# Deploy to Vercel Guide
+# Deploy to Vercel
 
-## Step 1: Install Vercel CLI
+## 1. Push to GitHub
 
-```powershell
-npm install -g vercel
-```
+The repo must be on GitHub (already at `chay0354/wolt-bot`).
 
-Or use npx (no installation needed):
-```powershell
-npx vercel
-```
+## 2. Import in Vercel
 
-## Step 2: Login to Vercel
+1. Go to [vercel.com/new](https://vercel.com/new)
+2. Import **wolt-bot** from GitHub
+3. Framework preset: **Other** (no build command needed)
+4. Click **Deploy** (first deploy may fail until env vars are set — that's OK)
 
-```powershell
-vercel login
-```
+## 3. Add environment variables
 
-## Step 3: Deploy
+Vercel Dashboard → your project → **Settings** → **Environment Variables**
 
-From your project directory:
+Add every variable below for **Production** (and Preview if you want):
 
-```powershell
-vercel
-```
+| Variable | Required | Example / notes |
+|---|---|---|
+| `ACCOUNT_SID` | Yes | Twilio Account SID |
+| `AUTH_TOKEN` | Yes | Twilio Auth Token |
+| `DEFAULT_FROM` | Yes | `whatsapp:+14155238886` |
+| `DEFAULT_TO` | No | Your test number |
+| `CONTENT_SID` | No | Twilio content template SID |
+| `CONTENT_VARIABLES` | No | `{"1":"12/1","2":"3pm"}` |
+| `SPREADSHEET_ID` | Yes | Google Sheet ID |
+| `GOOGLE_CREDENTIALS_JSON` | Yes | Base64 service account JSON (see below) |
+| `VOICE_MESSAGE_URL` | No | Public HTTPS URL to an audio file |
 
-Follow the prompts:
-- Set up and deploy? **Yes**
-- Which scope? (Choose your account)
-- Link to existing project? **No**
-- Project name? (Press Enter for default or type a name)
-- Directory? (Press Enter for `./`)
-- Override settings? **No**
+### Generate `GOOGLE_CREDENTIALS_JSON`
 
-## Step 4: Set Environment Variables
-
-After deployment, you need to add your environment variables in Vercel:
-
-1. Go to your project on https://vercel.com
-2. Click **Settings** → **Environment Variables**
-3. Add these variables:
-
-```
-ACCOUNT_SID=your_twilio_account_sid_here
-AUTH_TOKEN=your_auth_token_here
-DEFAULT_FROM=whatsapp:+14155238886
-DEFAULT_TO=whatsapp:+your_phone_number_here
-CONTENT_SID=your_content_template_sid_here
-CONTENT_VARIABLES={"1":"12/1","2":"3pm"}
-SPREADSHEET_ID=your_google_sheet_id_here
-GOOGLE_CREDENTIALS_PATH=beaming-opus-452719-u5-b39abc625ad4.json
-```
-
-**Important for Google Sheets:**
-Since Vercel is serverless, you need to upload your Google credentials file. You have two options:
-
-### Option A: Upload credentials file (Recommended)
-1. In Vercel dashboard, go to your project
-2. Go to **Settings** → **Files**
-3. Upload `beaming-opus-452719-u5-b39abc625ad4.json`
-4. It will be available at `/var/task/beaming-opus-452719-u5-b39abc625ad4.json`
-
-### Option B: Use environment variable for credentials
-Convert your JSON file to a base64 string and add it as an environment variable:
+Locally, with the credentials JSON file in the project folder:
 
 ```powershell
-# In PowerShell, convert file to base64
-$content = Get-Content beaming-opus-452719-u5-b39abc625ad4.json -Raw
-$bytes = [System.Text.Encoding]::UTF8.GetBytes($content)
-$base64 = [System.Convert]::ToBase64String($bytes)
-$base64
+npm run prepare-vercel
 ```
 
-Then add `GOOGLE_CREDENTIALS_JSON` as an environment variable in Vercel with the base64 value, and we'll need to update the code to use it.
+Copy the entire base64 string and paste it as the value of `GOOGLE_CREDENTIALS_JSON` in Vercel.
 
-## Step 5: Redeploy
+## 4. Redeploy
 
-After adding environment variables:
+After saving env vars:
+
+- Vercel Dashboard → **Deployments** → **Redeploy**, or
+- Push a commit to `main` (if Git integration is connected)
+
+## 5. Get your webhook URL
+
+Open your deployment URL, e.g. `https://wolt-bot.vercel.app`
+
+Your Twilio webhook is:
+
+```
+https://wolt-bot.vercel.app/webhook
+```
+
+Visit `/` on your deployment to see the live webhook URL in JSON.
+
+## 6. Configure Twilio
+
+1. Twilio Console → **Messaging** → **Settings** → **WhatsApp Sandbox Settings**
+2. **When a message comes in:** `https://your-project.vercel.app/webhook`
+3. Method: **POST**
+4. Save
+
+## 7. Test
+
+1. Join the WhatsApp sandbox (send `join ...` to +1 415 523 8886)
+2. Send a message to the sandbox number
+3. You should get an auto-reply and a new row in Google Sheets
+
+Check **Vercel → Deployments → Functions → Logs** if something fails.
+
+## Checklist
+
+- [ ] All required env vars set in Vercel
+- [ ] Google Sheet shared with `wolt-743@beaming-opus-452719-u5.iam.gserviceaccount.com` (Editor)
+- [ ] Twilio webhook points to `https://your-project.vercel.app/webhook`
+- [ ] WhatsApp sandbox joined on your phone
+
+## CLI deploy (optional)
 
 ```powershell
-vercel --prod
+npx vercel login
+npx vercel --prod
 ```
 
-Or trigger a new deployment from the Vercel dashboard.
-
-## Step 6: Get Your Webhook URL
-
-After deployment, Vercel will give you a URL like:
-```
-https://your-project-name.vercel.app
-```
-
-Your webhook URL will be:
-```
-https://your-project-name.vercel.app/webhook
-```
-
-## Step 7: Configure Twilio Webhook
-
-1. Go to **Twilio Console** → **Messaging** → **Settings** → **WhatsApp Sandbox Settings**
-2. In **"When a message comes in"**, paste:
-   ```
-   https://your-project-name.vercel.app/webhook
-   ```
-3. Set HTTP method to: **POST**
-4. Click **Save**
-
-## Step 8: Test!
-
-Send a WhatsApp message to **+1 415 523 8886** and you should receive "hi" as a reply!
-
-## Updating Your Deployment
-
-Whenever you make changes:
+Set env vars in the dashboard first, or via:
 
 ```powershell
-vercel --prod
+npx vercel env add ACCOUNT_SID
 ```
-
-Or push to your connected Git repository (if you connected one).
-
-## Troubleshooting
-
-- **Check logs**: Go to Vercel dashboard → Your project → **Deployments** → Click on a deployment → **Functions** tab
-- **Environment variables**: Make sure all are set correctly
-- **Google Sheets**: Ensure the service account has access to your sheet
